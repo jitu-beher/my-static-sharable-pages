@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Full Mock Test</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f4f9;
+        }
+
+        header {
+            background: #0d47a1;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            margin: 10px 0;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+        }
+
+        #timer {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        #questions {
+            width: 100%;
+            padding: 20px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            flex: 1 1 100%;
+        }
+
+        #palette {
+            width: 100%;
+            background: white;
+            padding: 10px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            border-top: 2px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: flex-start;
+            align-content: flex-start;
+            max-height: 150px;
+        }
+
+        .question {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .question p {
+            margin: 10px 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+
+        .question label {
+            display: block;
+            padding: 8px 0;
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+            margin-bottom: 5px;
+        }
+
+        .question input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .palette-btn {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .not-visited {
+            background: #ccc;
+            color: #333;
+        }
+
+        .answered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .not-answered {
+            background: #f44336;
+            color: white;
+        }
+
+        .marked {
+            background: #ff9800;
+            color: white;
+        }
+
+        .button-container {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #ddd;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #0d47a1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        button:active {
+            background: #063d91;
+        }
+
+        .correct {
+            background-color: #c8e6c9 !important;
+        }
+
+        .incorrect {
+            background-color: #ffcdd2 !important;
+        }
+
+        /* Tablet and larger screens */
+        @media (min-width: 768px) {
+            .container {
+                flex-wrap: nowrap;
+            }
+
+            #questions {
+                width: 75%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                padding: 20px;
+            }
+
+            #palette {
+                width: 25%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                border-left: 2px solid #ddd;
+                border-top: none;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                align-content: flex-start;
+                padding: 15px;
+            }
+
+            .palette-btn {
+                width: 100%;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            header {
+                padding: 10px;
+            }
+
+            header h2 {
+                margin: 5px 0;
+            }
+
+            .question {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            button {
+                padding: 8px 12px;
+                margin: 3px;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h2>NEET 2026 Full Length Mock</h2>
+        <div id="timer">Loading...</div>
+    </header>
+
+    <div class="container">
+        <div id="questions"></div>
+        <div id="palette"></div>
+    </div>
+
+    <div class="button-container">
+        <button onclick="submitExam()">Submit</button>
+        <button onclick="exportPDF()">Export Result PDF</button>
+    </div>
+
+    <script>
+        let time;
+
+        const questionsData = [
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 1)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 2)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 3)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 4)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 5)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 6)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 7)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 8)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 9)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 10)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 11)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 12)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 13)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 14)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 15)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 16)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 17)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 18)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 19)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 20)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 21)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 22)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 23)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 24)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 25)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 26)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 27)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 28)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 29)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 30)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 31)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 32)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 33)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 34)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 35)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 36)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 37)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 38)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 39)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 40)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 41)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 42)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 43)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 44)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 45)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 46)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 47)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 48)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 49)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 50)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 51)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 52)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 53)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 54)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 55)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 56)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 57)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 58)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 59)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 60)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 61)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 62)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 63)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 64)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 65)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 66)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 67)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 68)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 69)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 70)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 71)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 72)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 73)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 74)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 75)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 76)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 77)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 78)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 79)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 80)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which biomolecule acts as an enzyme? (Set 81)",
+                "options": [
+                    "Protein",
+                    "Carbohydrate",
+                    "Lipid",
+                    "Vitamin"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "DNA replication occurs in which phase? (Set 82)",
+                "options": [
+                    "G1",
+                    "S phase",
+                    "G2",
+                    "M phase"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Mitochondria is the site of: (Set 83)",
+                "options": [
+                    "Photosynthesis",
+                    "Respiration",
+                    "Digestion",
+                    "Excretion"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "tRNA carries: (Set 84)",
+                "options": [
+                    "Amino acids",
+                    "Lipids",
+                    "DNA",
+                    "Carbohydrates"
+                ],
+                "answer": 0
+            },
+            {
+                "subject": "Biology",
+                "question": "Chlorophyll absorbs maximum light in: (Set 85)",
+                "options": [
+                    "Green",
+                    "Blue & Red",
+                    "Yellow",
+                    "Infrared"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which organelle is called power house of cell? (Set 86)",
+                "options": [
+                    "Nucleus",
+                    "Mitochondria",
+                    "Ribosome",
+                    "Golgi"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which process converts glucose into pyruvate? (Set 87)",
+                "options": [
+                    "Krebs cycle",
+                    "Glycolysis",
+                    "ETS",
+                    "Fermentation"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "RNA is synthesized from DNA in: (Set 88)",
+                "options": [
+                    "Replication",
+                    "Translation",
+                    "Transcription",
+                    "Mutation"
+                ],
+                "answer": 2
+            },
+            {
+                "subject": "Biology",
+                "question": "Which cell organelle modifies proteins? (Set 89)",
+                "options": [
+                    "Ribosome",
+                    "Golgi apparatus",
+                    "Mitochondria",
+                    "Lysosome"
+                ],
+                "answer": 1
+            },
+            {
+                "subject": "Biology",
+                "question": "Which part of neuron receives impulses? (Set 90)",
+                "options": [
+                    "Axon",
+                    "Dendrite",
+                    "Node",
+                    "Synapse"
+                ],
+                "answer": 1
+            }
+        ];
+
+
+
+
+        // remove fixed +1 hack that could create an empty question
+        // (questions count is already in the array size)
+        const timePerQuestion = 60; // seconds per question (NEET approx 1 min per question)
+        const totalTime = questionsData.length * timePerQuestion;
+
+        time = localStorage.getItem("neet_time")
+            ? parseInt(localStorage.getItem("neet_time"))
+            : totalTime;
+
+        if (time <= 0 || time > totalTime) {
+            time = totalTime;
+            localStorage.setItem("neet_time", time);
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        document.getElementById("timer").innerText = formatTime(time);
+
+        const questionsDiv = document.getElementById("questions");
+        const paletteDiv = document.getElementById("palette");
+
+        questionsData.forEach((q, index) => {
+            const qDiv = document.createElement("div");
+            qDiv.className = "question";
+            qDiv.id = "q" + index;
+
+            let savedAnswer = localStorage.getItem("neet_ans_" + index);
+
+            qDiv.innerHTML = `
+    <p><b>Q${index + 1}.</b> ${q.question}</p>
+    ${q.options.map((opt, i) => `
+        <label>
+        <input type="radio" name="q${index}" value="${i}" ${savedAnswer !== null && parseInt(savedAnswer) === i ? "checked" : ""}>
+        ${opt}
+        </label><br>`).join("")}
+    `;
+
+            questionsDiv.appendChild(qDiv);
+
+            qDiv.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener("change", function () {
+                    saveAnswer(index, this.value);
+                });
+            });
+
+
+            const btn = document.createElement("button");
+            btn.innerText = index + 1;
+            btn.className = "palette-btn not-visited";
+            btn.id = "p" + index;
+            btn.onclick = () => document.getElementById("q" + index).scrollIntoView();
+            paletteDiv.appendChild(btn);
+
+            if (savedAnswer !== null) updatePalette(index, true);
+        });
+
+        function saveAnswer(qIndex, optIndex) {
+            localStorage.setItem("neet_ans_" + qIndex, optIndex);
+            updatePalette(qIndex, true);
+        }
+
+        function updatePalette(index, answered) {
+            const btn = document.getElementById("p" + index);
+            btn.className = "palette-btn " + (answered ? "answered" : "not-answered");
+        }
+
+        function submitExam() {
+            let score = 0;
+            let attempted = 0;
+            const maxScore = questionsData.length * 4;
+
+            questionsData.forEach((q, i) => {
+                const qDiv = document.getElementById("q" + i);
+                const selected = localStorage.getItem("neet_ans_" + i);
+                const options = qDiv.querySelectorAll('input[type="radio"]');
+
+                options.forEach((opt, index) => {
+                    // Remove previous classes
+                    opt.parentElement.classList.remove("correct", "incorrect");
+
+                    if (index === q.answer) {
+                        // Correct answer
+                        opt.parentElement.classList.add("correct");
+                    }
+
+                    if (selected !== null && parseInt(selected) === index && parseInt(selected) !== q.answer) {
+                        // Wrongly selected option
+                        opt.parentElement.classList.add("incorrect");
+                    }
+                });
+
+                if (selected !== null) {
+                    attempted++;
+                    if (parseInt(selected) === q.answer) {
+                        score += 4;
+                    } else {
+                        score -= 1;
+                    }
+                }
+            });
+
+            alert("Score: " + score + " / " + maxScore);
+            localStorage.setItem("neet_score", score);
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let score = localStorage.getItem("neet_score") || 0;
+            const maxScore = questionsData.length * 4;
+            doc.text("NEET Mock Test Result", 20, 20);
+            doc.text("Score: " + score + " / " + maxScore, 20, 40);
+            doc.save("neet-result.pdf");
+        }
+
+        // Timer
+        setInterval(() => {
+            if (time <= 0) {
+                submitExam();
+                return;
+            }
+            time--;
+            localStorage.setItem("neet_time", time);
+            let h = Math.floor(time / 3600);
+            let m = Math.floor((time % 3600) / 60);
+            let s = time % 60;
+            document.getElementById("timer").innerText =
+                `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }, 1000);
+
+    </script>
+</body>
+
+</html>
