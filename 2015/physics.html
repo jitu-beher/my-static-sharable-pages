@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Full Mock Test</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f4f9;
+        }
+
+        header {
+            background: #0d47a1;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            margin: 10px 0;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+        }
+
+        #timer {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        #questions {
+            width: 100%;
+            padding: 20px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            flex: 1 1 100%;
+        }
+
+        #palette {
+            width: 100%;
+            background: white;
+            padding: 10px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            border-top: 2px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: flex-start;
+            align-content: flex-start;
+            max-height: 150px;
+        }
+
+        .question {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .question p {
+            margin: 10px 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+
+        .question label {
+            display: block;
+            padding: 8px 0;
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+            margin-bottom: 5px;
+        }
+
+        .question input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .palette-btn {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .not-visited {
+            background: #ccc;
+            color: #333;
+        }
+
+        .answered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .not-answered {
+            background: #f44336;
+            color: white;
+        }
+
+        .marked {
+            background: #ff9800;
+            color: white;
+        }
+
+        .button-container {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #ddd;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #0d47a1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        button:active {
+            background: #063d91;
+        }
+
+        .correct {
+            background-color: #c8e6c9 !important;
+        }
+
+        .incorrect {
+            background-color: #ffcdd2 !important;
+        }
+
+        /* Tablet and larger screens */
+        @media (min-width: 768px) {
+            .container {
+                flex-wrap: nowrap;
+            }
+
+            #questions {
+                width: 75%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                padding: 20px;
+            }
+
+            #palette {
+                width: 25%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                border-left: 2px solid #ddd;
+                border-top: none;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                align-content: flex-start;
+                padding: 15px;
+            }
+
+            .palette-btn {
+                width: 100%;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            header {
+                padding: 10px;
+            }
+
+            header h2 {
+                margin: 5px 0;
+            }
+
+            .question {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            button {
+                padding: 8px 12px;
+                margin: 3px;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h2>NEET 2026 Full Length Mock</h2>
+        <div id="timer">Loading...</div>
+    </header>
+
+    <div class="container">
+        <div id="questions"></div>
+        <div id="palette"></div>
+    </div>
+
+    <div class="button-container">
+        <button onclick="submitExam()">Submit</button>
+        <button onclick="exportPDF()">Export Result PDF</button>
+    </div>
+
+    <script>
+        let time;
+
+        const questionsData = [
+  {
+    "subject": "Physics",
+    "question": "A photoelectric surface is illuminated successively by monochromatic light of wavelength λ1 and λ2. If the maximum kinetic energy of the emitted photoelectrons in the second case is 3 times that in the first case, the work function of the surface of the material is:",
+    "options": [
+      "2hc/λ",
+      "hc/λ",
+      "3hc/2λ",
+      "hc/2λ"
+    ],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A parallel plate air capacitor has capacity 'C', distance of separation between plates is 'd' and potential difference 'V' is applied between the plates. Force of attraction between the plates is:",
+    "options": [
+      "CV2/d",
+      "C2V2/2d2",
+      "c2v2/2d",
+      "CV2/2d"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "An ideal gas is compressed to half its initial volume by means of several processes. Which process results in the maximum work done on the gas?",
+    "options": [
+      "Isochoric",
+      "Isothermal",
+      "Adiabatic",
+      "Isobaric"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A beam of light consisting of red, green and blue colours is incident on a right angled prism. The refractive indices for red, green and blue wavelengths are 1.39, 1.44 and 1.47 respectively. The prism will:",
+    "options": [
+      "Not separate the three colours at all",
+      "Separate the red colour part from the green and blue colours",
+      "Separate the blue colour part from the red and green colours",
+      "Separate all the three colours from one another"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "A remote sensing satellite of earth revolves in a circular orbit at a height of 0.25 x 10^6 m above the surface of earth. If earth's radius is 6.38 x 10^6 m and g=9.8 ms^-2, then the orbital speed of the satellite is:",
+    "options": [
+      "9.13 km/s",
+      "6.67 km/s",
+      "7.76 km/s",
+      "8.56 km/s"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The energy of the electromagnetic waves is of the order of 15 keV. To which part of the spectrum does it belong?",
+    "options": [
+      "Ultraviolet rays",
+      "Gamma rays",
+      "X-rays",
+      "Infrared rays"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A proton and an alpha particle both enter a region of uniform magnetic field B, moving at right angles to the field. If the radius of circular orbits for both the particles is equal and the kinetic energy acquired by proton is 1 MeV, the energy acquired by the alpha particle will be:",
+    "options": [
+      "1.5 MeV",
+      "1 MeV",
+      "4 MeV",
+      "0.5 MeV"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "If potential (in volts) in a region is expressed as V(x, y, z)=6xy-y+2yz, the electric field (in N/C) at point (1,1,0) is:",
+    "options": [
+      "-(2i+3j+k)",
+      "-(6i+9j+k)",
+      "-(3i+5j+3k)",
+      "-(6i+5j+2k)"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "At the first minimum adjacent to the central maximum of a single-slit diffraction pattern, the phase difference between the Huygen's wavelet from the edge of the slit and the wavelet from the midpoint of the slit is:",
+    "options": [
+      "π radian",
+      "8 radian",
+      "π/2 radian",
+      "π/4 radian"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The heart of a man pumps 5 litres of blood through the arteries per minute at a pressure of 150 mm of mercury. If the density of mercury is 13.6 x 10^3 kg/m^3 and g=10 m/s^2, then the power of heart in watt is:",
+    "options": [
+      "3.0",
+      "1.50",
+      "1.70",
+      "2.35"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "Two metal wires of identical dimensions are connected in series. If σ1 and σ2 are the conductivities of the metal wires respectively, the effective conductivity of the combination is:",
+    "options": [
+      "σ1 + σ2 / σ1σ2",
+      "(σ1 + σ2)/2",
+      "2σ1σ2 / (σ1 + σ2)",
+      "(σ1σ2)/(σ1 + σ2)"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "If potential (in volts) in a region is expressed as V(x, y, z)=6xy - y + 2yz, the electric field (in N/C) at point (1,1,0) is:",
+    "options": [
+      "-(2i+3j+k)",
+      "-(6i+9j+k)",
+      "-(3i+5j+3k)",
+      "-(6i+5j+2k)"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "Two particles A and B move with constant velocities v1 and v2. At the initial moment their position vectors are r1 and r2 respectively. The condition for particles A and B to collide is:",
+    "options": [
+      "|r1| = |r2| × v2",
+      "r1 - r2 = v1 - v2",
+      "|r1 - r2| = |v2 - v1|",
+      "r1·v1 = r2·v2"
+    ],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A force P = ωi + 3j + 6k is acting at a point r = 2i - 6j - 12k. The value of ω for which angular momentum about origin is conserved is:",
+    "options": [
+      "0",
+      "1",
+      "-1",
+      "2"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "At the first minimum adjacent to the central maximum of a single-slit diffraction pattern, the phase difference between the Huygen's wavelet from the edge of the slit and the wavelet from the midpoint of the slit is:",
+    "options": [
+      "π radian",
+      "8 radian",
+      "π/2 radian",
+      "π/4 radian"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "A ball is thrown vertically downwards from a height of 20 m with an initial velocity v0. It collides with the ground, loses 50 percent of its energy in collision and rebounds to the same height. The initial velocity v0 is (Take g=10 ms^-2):",
+    "options": [
+      "28 ms^-1",
+      "10 ms^-1",
+      "14 ms^-1",
+      "20 ms^-1"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "A string is stretched between fixed points separated by 75.0 cm. It is observed to have resonant frequencies of 420 Hz and 315 Hz. There are no other resonant frequencies between these two. The lowest resonant frequency for this string is:",
+    "options": [
+      "10.5 Hz",
+      "105 Hz",
+      "155 Hz",
+      "205 Hz"
+    ],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A nucleus of uranium decays at rest into thorium and helium. Then:",
+    "options": [
+      "The helium nucleus has more momentum than the thorium nucleus",
+      "The helium nucleus has less kinetic energy than the thorium nucleus",
+      "The helium nucleus has more kinetic energy than the thorium nucleus",
+      "The helium nucleus has less momentum than the thorium nucleus"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "Water rises to a height 'h' in a capillary tube. If the length of capillary tube above the surface of water is made less than 'h', then:",
+    "options": [
+      "Water rises up to a point a little below the top and stays there",
+      "Water does not rise at all",
+      "Water rises up to the tip of capillary tube and then starts overflowing like a fountain",
+      "Water rises up to the top of capillary tube and stays there without overflowing"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "On a frictionless surface, a block of mass M moving at speed v collides elastically with another block of same mass M which is initially at rest. After collision the first block moves at an angle θ to its initial direction and has a speed v/√3. The second block's speed after the collision is:",
+    "options": [
+      "v/√2",
+      "v/√3",
+      "2v/√3",
+      "v/2"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A rectangular coil of length 0.12 m and width 0.1 m having 50 turns of wire is suspended vertically in a uniform magnetic field of strength 0.2 Wb/m^2. The coil carries a current of 2 A. If the plane of the coil is inclined at an angle of 30° with the direction of the field, the torque required to keep the coil in stable equilibrium will be:",
+    "options": [
+      "0.24 Nm",
+      "0.12 Nm",
+      "0.15 Nm",
+      "0.20 Nm"
+    ],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "An automobile moves on a road with a speed of 54 km/h. The radius of its wheels is 0.45 m and the moment of inertia of the wheel about its axis of rotation is 3 kg·m^2. If the vehicle is brought to rest in 15 s, the magnitude of average torque transmitted by its brakes to the wheel is:",
+    "options": [
+      "10.86 kg·m^2·s^-2",
+      "2.86 kg·m^2·s^-2",
+      "6.66 kg·m^2·s^-2",
+      "8.58 kg·m^2·s^-2"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The cylindrical tube of a spray pump has radius R, one end of which has n fine holes, each of radius r. If the speed of the liquid in the tube is V, the speed of the ejection of the liquid through the holes is:",
+    "options": [
+      "VR^2 / (n r^2)",
+      "V^2 R / n r",
+      "VR^2 / nr",
+      "VR^2 / n r^2"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "In an astronomical telescope in normal adjustment a straight black line of length L is drawn on inside part of objective lens. The eye-piece forms a real image of this line. The length of this image is l. The magnification of the telescope is:",
+    "options": [
+      "L/l",
+      "l/L",
+      "L+ l / L",
+      "L / (l+1)"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "Two stones of masses m and 2m are whirled in horizontal circles, the heavier one in a radius 2r and the lighter one in radius r. The tangential speed of lighter stone is n times that of the heavier stone when they experience same centripetal forces. The value of n is:",
+    "options": [
+      "4",
+      "1",
+      "2",
+      "3"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "Two slits in Young’s experiment have widths in the ratio 1:25. The ratio of intensity at the maxima and minima in the interference pattern (Imax/Imin) is:",
+    "options": [
+      "49/121",
+      "4/9",
+      "9/4",
+      "121/49"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The Young’s modulus of steel is twice that of brass. Two wires of same length and of same area of cross section, one of steel and another of brass are suspended from the same roof. If we want the lower ends of the wires to be at the same level, then the weights added to the steel and brass wires must be in the ratio of:",
+    "options": [
+      "4:1",
+      "1:1",
+      "1:2",
+      "2:1"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "Light of wavelength 500 nm is incident on a metal with work function 2.28 eV. The de Broglie wavelength of the emitted electron is:",
+    "options": [
+      "≥ 2.8×10^-9 m",
+      "≤ 2.8×10^-12 m",
+      "< 2.8×10^-10 m",
+      "< 2.8×10^-9 m"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A source of sound S emitting waves of frequency 100 Hz and an observer O are located at some distance from each other. The source is moving with a speed of 19.4 ms^-1 at an angle of 60° with the source-observer line. The observer is at rest. The apparent frequency observed by the observer (velocity of sound in air 330 ms^-1) is:",
+    "options": [
+      "106 Hz",
+      "97 Hz",
+      "100 Hz",
+      "103 Hz"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The value of coefficient of volume expansion of glycerin is 5×10^-4 K^-1. The fractional change in the density of glycerin for a rise of 40℃ in its temperature is:",
+    "options": [
+      "0.025",
+      "0.010",
+      "0.015",
+      "0.020"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "A plank with a box on it at one end is gradually raised about the other end. As the angle of inclination with the horizontal reaches 30°, the box starts to slip and slides 4.0 m down the plank in 4.0 s. The coefficients of static and kinetic friction between the box and the plank will be respectively:",
+    "options": [
+      "0.5 and 0.6",
+      "0.4 and 0.3",
+      "0.6 and 0.6",
+      "0.6 and 0.5"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "In the spectrum of hydrogen, the ratio of the longest wavelength in the Lyman series to the longest wavelength in the Balmer series is:",
+    "options": [
+      "27/5",
+      "5/27",
+      "9/4",
+      "27/4"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "A particle is executing a simple harmonic motion. Its maximum acceleration is a and maximum velocity is b. Then, its time period of vibration will be:",
+    "options": [
+      "b^2/a",
+      "2πb/a",
+      "b^2/a^2",
+      "2πa/b"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The position vector of a particle R as a function of time is given by R = 4 sin(2πt) i + 4 cos(2πt) j. Which one of the following statements is wrong for the motion of particle?",
+    "options": [
+      "Magnitude of the velocity of particle is 8 m/s",
+      "Path of the particle is a circle of radius 4 m",
+      "Acceleration vector is along -R",
+      "Magnitude of acceleration vector is 2R"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "In a circuit containing an ammeter, a battery of 30 V and resistance 40.8 Ω all connected in series, if the ammeter has a coil of resistance 480 Ω and a shunt of 20 Ω, the reading in the ammeter will be:",
+    "options": [
+      "2 A",
+      "1 A",
+      "0.5 A",
+      "0.25 A"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A satellite S is moving in an elliptical orbit around the earth. The mass of the satellite is very small compared to the mass of the earth. Then:",
+    "options": [
+      "The linear momentum of S remains constant in magnitude",
+      "The acceleration of S is always directed towards the centre of the earth",
+      "The angular momentum of S about the centre of the earth changes in direction, but its magnitude remains constant",
+      "The total mechanical energy of S varies periodically with time"
+    ],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "In the given figure, a diode D is connected to an external resistance R = 100 Ω and an e.m.f. of 3.5 V. If the barrier potential developed across the diode is 0.5 V, the current in the circuit will be:",
+    "options": [
+      "20 mA",
+      "35 mA",
+      "30 mA",
+      "40 mA"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "Two slits in Young’s experiment have widths in the ratio 1:25. The ratio of intensity at the maxima and minima in the interference pattern (Imax/Imin) is:",
+    "options": [
+      "49/121",
+      "4/9",
+      "9/4",
+      "121/49"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The coefficient of performance of a refrigerator is 5. If the temperature inside freezer is -20°C, the temperature of the surroundings to which it rejects heat is:",
+    "options": [
+      "11°C",
+      "21°C",
+      "31°C",
+      "41°C"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "Which of the following diseases is caused by a protozoan?",
+    "options": [
+      "Babesiosis",
+      "Blastomycosis",
+      "Syphilis",
+      "Influenza"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The value of coefficient of volume expansion of glycerin is 5×10^-4 K^-1. The fractional change in the density of glycerin for a rise of 40℃ in its temperature is:",
+    "options": [
+      "0.025",
+      "0.010",
+      "0.015",
+      "0.020"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "A plank with a box on it at one end is gradually raised about the other end. As the angle of inclination with the horizontal reaches 30°, the box starts to slip and slides 4.0 m down the plank in 4.0 s. The coefficients of static and kinetic friction between the box and the plank will be respectively:",
+    "options": [
+      "0.5 and 0.6",
+      "0.4 and 0.3",
+      "0.6 and 0.6",
+      "0.6 and 0.5"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "A particle is executing a simple harmonic motion. Its maximum acceleration is a and maximum velocity is b. Then, its time period of vibration will be:",
+    "options": [
+      "b^2/a",
+      "2πb/a",
+      "b^2/a^2",
+      "2πa/b"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The position vector of a particle R as a function of time is given by R = 4 sin(2πt) i + 4 cos(2πt) j. Which one of the following statements is wrong for the motion of particle?",
+    "options": [
+      "Magnitude of the velocity of particle is 8 m/s",
+      "Path of the particle is a circle of radius 4 m",
+      "Acceleration vector is along -R",
+      "Magnitude of acceleration vector is 2R"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "In a circuit containing an ammeter, a battery of 30 V and resistance 40.8 Ω all connected in series, if the ammeter has a coil of resistance 480 Ω and a shunt of 20 Ω, the reading in the ammeter will be:",
+    "options": [
+      "2 A",
+      "1 A",
+      "0.5 A",
+      "0.25 A"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A satellite S is moving in an elliptical orbit around the earth. The mass of the satellite is very small compared to the mass of the earth. Then:",
+    "options": [
+      "The linear momentum of S remains constant in magnitude",
+      "The acceleration of S is always directed towards the centre of the earth",
+      "The angular momentum of S about the centre of the earth changes in direction, but its magnitude remains constant",
+      "The total mechanical energy of S varies periodically with time"
+    ],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "In the given figure, a diode D is connected to an external resistance R = 100 Ω and an e.m.f. of 3.5 V. If the barrier potential developed across the diode is 0.5 V, the current in the circuit will be:",
+    "options": [
+      "20 mA",
+      "35 mA",
+      "30 mA",
+      "40 mA"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The coefficient of performance of a refrigerator is 5. If the temperature inside freezer is -20°C, the temperature of the surroundings to which it rejects heat is:",
+    "options": [
+      "11°C",
+      "21°C",
+      "31°C",
+      "41°C"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "Light of wavelength 500 nm is incident on a metal with work function 2.28 eV. The de Broglie wavelength of the emitted electron is:",
+    "options": [
+      "≥ 2.8×10^-9 m",
+      "≤ 2.8×10^-12 m",
+      "< 2.8×10^-10 m",
+      "< 2.8×10^-9 m"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A source of sound S emitting waves of frequency 100 Hz and an observer O are located at some distance from each other. The source is moving with a speed of 19.4 ms^-1 at an angle of 60° with the source-observer line. The observer is at rest. The apparent frequency observed by the observer (velocity of sound in air 330 ms^-1) is:",
+    "options": [
+      "106 Hz",
+      "97 Hz",
+      "100 Hz",
+      "103 Hz"
+    ],
+    "answer": 0
+  }
+];
+
+
+        // remove fixed +1 hack that could create an empty question
+        // (questions count is already in the array size)
+        const timePerQuestion = 60; // seconds per question (NEET approx 1 min per question)
+        const totalTime = questionsData.length * timePerQuestion;
+
+        time = localStorage.getItem("neet_time")
+            ? parseInt(localStorage.getItem("neet_time"))
+            : totalTime;
+
+        if (time <= 0 || time > totalTime) {
+            time = totalTime;
+            localStorage.setItem("neet_time", time);
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        document.getElementById("timer").innerText = formatTime(time);
+
+        const questionsDiv = document.getElementById("questions");
+        const paletteDiv = document.getElementById("palette");
+
+        questionsData.forEach((q, index) => {
+            const qDiv = document.createElement("div");
+            qDiv.className = "question";
+            qDiv.id = "q" + index;
+
+            let savedAnswer = localStorage.getItem("neet_ans_" + index);
+
+            qDiv.innerHTML = `
+    <p><b>Q${index + 1}.</b> ${q.question}</p>
+    ${q.options.map((opt, i) => `
+        <label>
+        <input type="radio" name="q${index}" value="${i}" ${savedAnswer !== null && parseInt(savedAnswer) === i ? "checked" : ""}>
+        ${opt}
+        </label><br>`).join("")}
+    `;
+
+            questionsDiv.appendChild(qDiv);
+
+            qDiv.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener("change", function () {
+                    saveAnswer(index, this.value);
+                });
+            });
+
+
+            const btn = document.createElement("button");
+            btn.innerText = index + 1;
+            btn.className = "palette-btn not-visited";
+            btn.id = "p" + index;
+            btn.onclick = () => document.getElementById("q" + index).scrollIntoView();
+            paletteDiv.appendChild(btn);
+
+            if (savedAnswer !== null) updatePalette(index, true);
+        });
+
+        function saveAnswer(qIndex, optIndex) {
+            localStorage.setItem("neet_ans_" + qIndex, optIndex);
+            updatePalette(qIndex, true);
+        }
+
+        function updatePalette(index, answered) {
+            const btn = document.getElementById("p" + index);
+            btn.className = "palette-btn " + (answered ? "answered" : "not-answered");
+        }
+
+        function submitExam() {
+            let score = 0;
+            let attempted = 0;
+            const maxScore = questionsData.length * 4;
+
+            questionsData.forEach((q, i) => {
+                const qDiv = document.getElementById("q" + i);
+                const selected = localStorage.getItem("neet_ans_" + i);
+                const options = qDiv.querySelectorAll('input[type="radio"]');
+
+                options.forEach((opt, index) => {
+                    // Remove previous classes
+                    opt.parentElement.classList.remove("correct", "incorrect");
+
+                    if (index === q.answer) {
+                        // Correct answer
+                        opt.parentElement.classList.add("correct");
+                    }
+
+                    if (selected !== null && parseInt(selected) === index && parseInt(selected) !== q.answer) {
+                        // Wrongly selected option
+                        opt.parentElement.classList.add("incorrect");
+                    }
+                });
+
+                if (selected !== null) {
+                    attempted++;
+                    if (parseInt(selected) === q.answer) {
+                        score += 4;
+                    } else {
+                        score -= 1;
+                    }
+                }
+            });
+
+            alert("Score: " + score + " / " + maxScore);
+            localStorage.setItem("neet_score", score);
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let score = localStorage.getItem("neet_score") || 0;
+            const maxScore = questionsData.length * 4;
+            doc.text("NEET Mock Test Result", 20, 20);
+            doc.text("Score: " + score + " / " + maxScore, 20, 40);
+            doc.save("neet-result.pdf");
+        }
+
+        // Timer
+        setInterval(() => {
+            if (time <= 0) {
+                submitExam();
+                return;
+            }
+            time--;
+            localStorage.setItem("neet_time", time);
+            let h = Math.floor(time / 3600);
+            let m = Math.floor((time % 3600) / 60);
+            let s = time % 60;
+            document.getElementById("timer").innerText =
+                `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }, 1000);
+
+    </script>
+</body>
+
+</html>
