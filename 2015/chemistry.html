@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Full Mock Test</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f4f9;
+        }
+
+        header {
+            background: #0d47a1;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            margin: 10px 0;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+        }
+
+        #timer {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        #questions {
+            width: 100%;
+            padding: 20px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            flex: 1 1 100%;
+        }
+
+        #palette {
+            width: 100%;
+            background: white;
+            padding: 10px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            border-top: 2px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: flex-start;
+            align-content: flex-start;
+            max-height: 150px;
+        }
+
+        .question {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .question p {
+            margin: 10px 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+
+        .question label {
+            display: block;
+            padding: 8px 0;
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+            margin-bottom: 5px;
+        }
+
+        .question input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .palette-btn {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .not-visited {
+            background: #ccc;
+            color: #333;
+        }
+
+        .answered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .not-answered {
+            background: #f44336;
+            color: white;
+        }
+
+        .marked {
+            background: #ff9800;
+            color: white;
+        }
+
+        .button-container {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #ddd;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #0d47a1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        button:active {
+            background: #063d91;
+        }
+
+        .correct {
+            background-color: #c8e6c9 !important;
+        }
+
+        .incorrect {
+            background-color: #ffcdd2 !important;
+        }
+
+        /* Tablet and larger screens */
+        @media (min-width: 768px) {
+            .container {
+                flex-wrap: nowrap;
+            }
+
+            #questions {
+                width: 75%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                padding: 20px;
+            }
+
+            #palette {
+                width: 25%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                border-left: 2px solid #ddd;
+                border-top: none;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                align-content: flex-start;
+                padding: 15px;
+            }
+
+            .palette-btn {
+                width: 100%;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            header {
+                padding: 10px;
+            }
+
+            header h2 {
+                margin: 5px 0;
+            }
+
+            .question {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            button {
+                padding: 8px 12px;
+                margin: 3px;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h2>NEET 2026 Full Length Mock</h2>
+        <div id="timer">Loading...</div>
+    </header>
+
+    <div class="container">
+        <div id="questions"></div>
+        <div id="palette"></div>
+    </div>
+
+    <div class="button-container">
+        <button onclick="submitExam()">Submit</button>
+        <button onclick="exportPDF()">Export Result PDF</button>
+    </div>
+
+    <script>
+        let time;
+
+        const questionsData = [
+  {
+    "subject": "Chemistry",
+    "question": "Two vessels separately contain two ideal gases A and B at the same temperature, the pressure of A being twice that of B. Under such conditions, the density of A is found to be 1.5 times the density of B. The ratio of molecular weight of A and B is:",
+    "options": ["1", "2", "3", "4"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following interactions both partners are adversely affected?",
+    "options": ["Parasitism", "Mutualism", "Competition", "Predation"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "In which of the following interactions both partners benefit?",
+    "options": ["Parasitism", "Mutualism", "Competition", "Predation"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Cell wall is absent in:",
+    "options": ["Mycoplasma", "Nostoc", "Aspergillus", "Funaria"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "In which of the following both pairs have correct combination?",
+    "options": [
+      "Nitrogen and Sulphur – Gaseous nutrient cycle",
+      "Carbon and Nitrogen – Sedimentary nutrient cycle",
+      "Sulphur and Phosphorus – Sedimentary nutrient cycle",
+      "Carbon and Sulphur – Gaseous nutrient cycle"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one is a wrong statement?",
+    "options": [
+      "Haploid endosperm is typical feature of gymnosperms",
+      "Brown algae have chlorophyll a and c, and fucoxanthin",
+      "Archegonia are found in Bryophyta, Pteridophyta and Gymnosperms",
+      "Mucor has biflagellate zoospores"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Match the columns and identify the correct option: (a) Thylakoid, (b) Cristae, (c) Cisterna, (d) Chromatin",
+    "options": [
+      "(a) Disc-shaped sacs in Golgi apparatus, (b) Infoldings in mitochondria, (c) Flat membranous sacs in stroma, (d) Condensed structure of DNA",
+      "(a) Flat membranous sacs in stroma, (b) Infoldings in mitochondria, (c) Disc-shaped sacs in Golgi apparatus, (d) Condensed structure of DNA",
+      "(a) Infoldings in mitochondria, (b) Disc-shaped sacs in Golgi apparatus, (c) Condensed structure of DNA, (d) Flat membranous sacs in stroma",
+      "(a) Disc-shaped sacs in Golgi apparatus, (b) Infoldings in mitochondria, (c) Flat membranous sacs in stroma, (d) Condensed structure of DNA"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The oxygen evolved during photosynthesis comes from water molecules. Which one of the following pairs of elements is involved in this reaction?",
+    "options": [
+      "Magnesium and Molybdenum",
+      "Magnesium and Chlorine",
+      "Manganese and Chlorine",
+      "Manganese and Potassium"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Root pressure develops due to:",
+    "options": [
+      "Passive absorption",
+      "Increase in transpiration",
+      "Active absorption",
+      "Low osmotic potential in soil"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Two vessels separately contain two ideal gases A and B at the same temperature, the pressure of A being twice that of B. Under such conditions, the density of A is found to be 1.5 times the density of B. The ratio of molecular weight of A and B is:",
+    "options": ["1", "2", "3", "4"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following interactions both partners are adversely affected?",
+    "options": ["Parasitism", "Mutualism", "Competition", "Predation"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "In which of the following interactions both partners benefit?",
+    "options": ["Parasitism", "Mutualism", "Competition", "Predation"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Cell wall is absent in:",
+    "options": ["Mycoplasma", "Nostoc", "Aspergillus", "Funaria"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "In which of the following both pairs have correct combination?",
+    "options": [
+      "Nitrogen and Sulphur – Gaseous nutrient cycle",
+      "Carbon and Nitrogen – Sedimentary nutrient cycle",
+      "Sulphur and Phosphorus – Sedimentary nutrient cycle",
+      "Carbon and Sulphur – Gaseous nutrient cycle"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one is a wrong statement?",
+    "options": [
+      "Haploid endosperm is typical feature of gymnosperms",
+      "Brown algae have chlorophyll a and c, and fucoxanthin",
+      "Archegonia are found in Bryophyta, Pteridophyta and Gymnosperms",
+      "Mucor has biflagellate zoospores"
+    ],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Match the columns and identify the correct option: (a) Thylakoid, (b) Cristae, (c) Cisterna, (d) Chromatin",
+    "options": [
+      "(a) Disc-shaped sacs in Golgi apparatus, (b) Infoldings in mitochondria, (c) Flat membranous sacs in stroma, (d) Condensed structure of DNA",
+      "(a) Flat membranous sacs in stroma, (b) Infoldings in mitochondria, (c) Disc-shaped sacs in Golgi apparatus, (d) Condensed structure of DNA",
+      "(a) Infoldings in mitochondria, (b) Disc-shaped sacs in Golgi apparatus, (c) Condensed structure of DNA, (d) Flat membranous sacs in stroma",
+      "(a) Disc-shaped sacs in Golgi apparatus, (b) Infoldings in mitochondria, (c) Flat membranous sacs in stroma, (d) Condensed structure of DNA"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The oxygen evolved during photosynthesis comes from water molecules. Which one of the following pairs of elements is involved in this reaction?",
+    "options": [
+      "Magnesium and Molybdenum",
+      "Magnesium and Chlorine",
+      "Manganese and Chlorine",
+      "Manganese and Potassium"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Root pressure develops due to:",
+    "options": [
+      "Passive absorption",
+      "Increase in transpiration",
+      "Active absorption",
+      "Low osmotic potential in soil"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a product of light reaction of photosynthesis?",
+    "options": ["ATP", "NADPH", "O2", "NADH"],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is a wrong statement?",
+    "options": [
+      "Anabaena and Nostoc are capable of fixing nitrogen in free-living state",
+      "The vegetative cells of Agaricus are diploid",
+      "In Rhizopus, the haploid hyphae are present",
+      "Cell wall is present in all fungi"
+    ],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a feature of plasmids?",
+    "options": [
+      "They are circular DNA molecules",
+      "They replicate independently",
+      "They carry antibiotic resistance genes",
+      "They are essential for survival"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the cytoskeleton in a cell?",
+    "options": [
+      "Intracellular transport",
+      "Maintenance of cell shape",
+      "Cell motility",
+      "Cell division"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the smooth endoplasmic reticulum?",
+    "options": [
+      "Synthesis of lipids",
+      "Synthesis of steroid hormones",
+      "Detoxification",
+      "Protein synthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the Golgi apparatus?",
+    "options": [
+      "Protein modification",
+      "Protein sorting",
+      "Lipid synthesis",
+      "Formation of lysosomes"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of lysosomes?",
+    "options": [
+      "Intracellular digestion",
+      "Autophagy",
+      "Apoptosis",
+      "Protein synthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of mitochondria?",
+    "options": [
+      "ATP production",
+      "Apoptosis",
+      "Heat production",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of chloroplasts?",
+    "options": [
+      "Photosynthesis",
+      "ATP production",
+      "Synthesis of amino acids",
+      "Respiration"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of peroxisomes?",
+    "options": [
+      "Breakdown of fatty acids",
+      "Detoxification of hydrogen peroxide",
+      "Synthesis of cholesterol",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of ribosomes?",
+    "options": [
+      "Protein synthesis",
+      "Formation of polysomes",
+      "Binding of mRNA",
+      "ATP production"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of vacuoles?",
+    "options": [
+      "Storage",
+      "Maintenance of turgor pressure",
+      "Waste disposal",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the nucleus?",
+    "options": [
+      "Control of cell activities",
+      "Storage of genetic information",
+      "Protein synthesis",
+      "Cell division"
+    ],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the plasma membrane?",
+    "options": [
+      "Selective permeability",
+      "Transport of molecules",
+      "Signal transduction",
+      "ATP production"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the cell wall?",
+    "options": [
+      "Protection",
+      "Maintenance of cell shape",
+      "Transport of molecules",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the cytoplasm?",
+    "options": [
+      "Site of metabolic activities",
+      "Suspension of organelles",
+      "Protein synthesis",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of microtubules?",
+    "options": [
+      "Cell division",
+      "Intracellular transport",
+      "Maintenance of cell shape",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of microfilaments?",
+    "options": [
+      "Cell motility",
+      "Maintenance of cell shape",
+      "Intracellular transport",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of intermediate filaments?",
+    "options": [
+      "Maintenance of cell shape",
+      "Anchoring of organelles",
+      "Signal transduction",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of centrioles?",
+    "options": [
+      "Cell division",
+      "Formation of spindle fibres",
+      "Formation of cilia and flagella",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of cilia and flagella?",
+    "options": [
+      "Locomotion",
+      "Movement of substances",
+      "Signal reception",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the endoplasmic reticulum?",
+    "options": [
+      "Protein synthesis",
+      "Lipid synthesis",
+      "Detoxification",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the Golgi complex?",
+    "options": [
+      "Protein modification",
+      "Protein sorting",
+      "Formation of lysosomes",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of lysosomes?",
+    "options": [
+      "Intracellular digestion",
+      "Autophagy",
+      "Apoptosis",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of mitochondria?",
+    "options": [
+      "ATP production",
+      "Apoptosis",
+      "Heat production",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of chloroplasts?",
+    "options": [
+      "Photosynthesis",
+      "ATP production",
+      "Synthesis of amino acids",
+      "Respiration"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of peroxisomes?",
+    "options": [
+      "Breakdown of fatty acids",
+      "Detoxification of hydrogen peroxide",
+      "Synthesis of cholesterol",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of ribosomes?",
+    "options": [
+      "Protein synthesis",
+      "Formation of polysomes",
+      "Binding of mRNA",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of vacuoles?",
+    "options": [
+      "Storage",
+      "Maintenance of turgor pressure",
+      "Waste disposal",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the nucleus?",
+    "options": [
+      "Control of cell activities",
+      "Storage of genetic information",
+      "Protein synthesis",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the plasma membrane?",
+    "options": [
+      "Selective permeability",
+      "Transport of molecules",
+      "Signal transduction",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the cell wall?",
+    "options": [
+      "Protection",
+      "Maintenance of cell shape",
+      "Transport of molecules",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the cytoplasm?",
+    "options": [
+      "Site of metabolic activities",
+      "Suspension of organelles",
+      "Protein synthesis",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of the cytoskeleton?",
+    "options": [
+      "Maintenance of cell shape",
+      "Intracellular transport",
+      "Cell motility",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which one of the following is not a function of intermediate filaments?",
+    "options": [
+      "Maintenance of cell shape",
+      "Anchoring of organelles",
+      "Signal transduction",
+      "Photosynthesis"
+    ],
+    "answer": 3
+  }
+];
+        // remove fixed +1 hack that could create an empty question
+        // (questions count is already in the array size)
+        const timePerQuestion = 60; // seconds per question (NEET approx 1 min per question)
+        const totalTime = questionsData.length * timePerQuestion;
+
+        time = localStorage.getItem("neet_time")
+            ? parseInt(localStorage.getItem("neet_time"))
+            : totalTime;
+
+        if (time <= 0 || time > totalTime) {
+            time = totalTime;
+            localStorage.setItem("neet_time", time);
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        document.getElementById("timer").innerText = formatTime(time);
+
+        const questionsDiv = document.getElementById("questions");
+        const paletteDiv = document.getElementById("palette");
+
+        questionsData.forEach((q, index) => {
+            const qDiv = document.createElement("div");
+            qDiv.className = "question";
+            qDiv.id = "q" + index;
+
+            let savedAnswer = localStorage.getItem("neet_ans_" + index);
+
+            qDiv.innerHTML = `
+    <p><b>Q${index + 1}.</b> ${q.question}</p>
+    ${q.options.map((opt, i) => `
+        <label>
+        <input type="radio" name="q${index}" value="${i}" ${savedAnswer !== null && parseInt(savedAnswer) === i ? "checked" : ""}>
+        ${opt}
+        </label><br>`).join("")}
+    `;
+
+            questionsDiv.appendChild(qDiv);
+
+            qDiv.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener("change", function () {
+                    saveAnswer(index, this.value);
+                });
+            });
+
+
+            const btn = document.createElement("button");
+            btn.innerText = index + 1;
+            btn.className = "palette-btn not-visited";
+            btn.id = "p" + index;
+            btn.onclick = () => document.getElementById("q" + index).scrollIntoView();
+            paletteDiv.appendChild(btn);
+
+            if (savedAnswer !== null) updatePalette(index, true);
+        });
+
+        function saveAnswer(qIndex, optIndex) {
+            localStorage.setItem("neet_ans_" + qIndex, optIndex);
+            updatePalette(qIndex, true);
+        }
+
+        function updatePalette(index, answered) {
+            const btn = document.getElementById("p" + index);
+            btn.className = "palette-btn " + (answered ? "answered" : "not-answered");
+        }
+
+        function submitExam() {
+            let score = 0;
+            let attempted = 0;
+            const maxScore = questionsData.length * 4;
+
+            questionsData.forEach((q, i) => {
+                const qDiv = document.getElementById("q" + i);
+                const selected = localStorage.getItem("neet_ans_" + i);
+                const options = qDiv.querySelectorAll('input[type="radio"]');
+
+                options.forEach((opt, index) => {
+                    // Remove previous classes
+                    opt.parentElement.classList.remove("correct", "incorrect");
+
+                    if (index === q.answer) {
+                        // Correct answer
+                        opt.parentElement.classList.add("correct");
+                    }
+
+                    if (selected !== null && parseInt(selected) === index && parseInt(selected) !== q.answer) {
+                        // Wrongly selected option
+                        opt.parentElement.classList.add("incorrect");
+                    }
+                });
+
+                if (selected !== null) {
+                    attempted++;
+                    if (parseInt(selected) === q.answer) {
+                        score += 4;
+                    } else {
+                        score -= 1;
+                    }
+                }
+            });
+
+            alert("Score: " + score + " / " + maxScore);
+            localStorage.setItem("neet_score", score);
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let score = localStorage.getItem("neet_score") || 0;
+            const maxScore = questionsData.length * 4;
+            doc.text("NEET Mock Test Result", 20, 20);
+            doc.text("Score: " + score + " / " + maxScore, 20, 40);
+            doc.save("neet-result.pdf");
+        }
+
+        // Timer
+        setInterval(() => {
+            if (time <= 0) {
+                submitExam();
+                return;
+            }
+            time--;
+            localStorage.setItem("neet_time", time);
+            let h = Math.floor(time / 3600);
+            let m = Math.floor((time % 3600) / 60);
+            let s = time % 60;
+            document.getElementById("timer").innerText =
+                `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }, 1000);
+
+    </script>
+</body>
+
+</html>
