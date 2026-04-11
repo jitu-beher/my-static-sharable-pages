@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Full Mock Test</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f4f9;
+        }
+
+        header {
+            background: #0d47a1;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            margin: 10px 0;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+        }
+
+        #timer {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        #questions {
+            width: 100%;
+            padding: 20px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            flex: 1 1 100%;
+        }
+
+        #palette {
+            width: 100%;
+            background: white;
+            padding: 10px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            border-top: 2px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: flex-start;
+            align-content: flex-start;
+            max-height: 150px;
+        }
+
+        .question {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .question p {
+            margin: 10px 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+
+        .question label {
+            display: block;
+            padding: 8px 0;
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+            margin-bottom: 5px;
+        }
+
+        .question input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .palette-btn {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .not-visited {
+            background: #ccc;
+            color: #333;
+        }
+
+        .answered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .not-answered {
+            background: #f44336;
+            color: white;
+        }
+
+        .marked {
+            background: #ff9800;
+            color: white;
+        }
+
+        .button-container {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #ddd;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #0d47a1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        button:active {
+            background: #063d91;
+        }
+
+        .correct {
+            background-color: #c8e6c9 !important;
+        }
+
+        .incorrect {
+            background-color: #ffcdd2 !important;
+        }
+
+        /* Tablet and larger screens */
+        @media (min-width: 768px) {
+            .container {
+                flex-wrap: nowrap;
+            }
+
+            #questions {
+                width: 75%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                padding: 20px;
+            }
+
+            #palette {
+                width: 25%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                border-left: 2px solid #ddd;
+                border-top: none;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                align-content: flex-start;
+                padding: 15px;
+            }
+
+            .palette-btn {
+                width: 100%;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            header {
+                padding: 10px;
+            }
+
+            header h2 {
+                margin: 5px 0;
+            }
+
+            .question {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            button {
+                padding: 8px 12px;
+                margin: 3px;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h2>NEET 2026 Full Length Mock</h2>
+        <div id="timer">Loading...</div>
+    </header>
+
+    <div class="container">
+        <div id="questions"></div>
+        <div id="palette"></div>
+    </div>
+
+    <div class="button-container">
+        <button onclick="submitExam()">Submit</button>
+        <button onclick="exportPDF()">Export Result PDF</button>
+    </div>
+
+    <script>
+        let time;
+
+        const questionsData = [
+  {
+    "subject": "Physics",
+    "question": "A satellite is revolving around Earth in a circular orbit of radius R. If the orbital speed is doubled, the new orbit will be:",
+    "options": ["Circular with radius 2R", "Elliptical", "Parabolic", "Not possible"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "In Young’s double slit experiment, if one slit is covered with a thin transparent sheet of refractive index μ and thickness t, the central fringe shifts by:",
+    "options": ["λt/μ", "t(μ−1)/λ", "λt/(μ−1)", "tμ/λ"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A Carnot engine operates between 400 K and 300 K. If it absorbs 600 J of heat from the source, the work done is:",
+    "options": ["200 J", "150 J", "100 J", "250 J"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The magnetic field at the center of a circular coil of radius r carrying current I is proportional to:",
+    "options": ["I/r", "I/r²", "r/I", "I²/r"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "An electron is accelerated through 100 V. Its de-Broglie wavelength is approximately:",
+    "options": ["1.23 nm", "0.123 nm", "12.3 nm", "0.0123 nm"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A block of mass 2 kg slides down a frictionless incline of angle 30°. The acceleration of the block is:",
+    "options": ["4.9 m/s²", "9.8 m/s²", "2.45 m/s²", "19.6 m/s²"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The escape velocity on Earth is 11.2 km/s. What will be the escape velocity on a planet of twice Earth’s radius and same density?",
+    "options": ["11.2 km/s", "15.8 km/s", "22.4 km/s", "7.9 km/s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "In SHM, the ratio of kinetic energy to potential energy at mean position is:",
+    "options": ["1", "∞", "0", "Depends on amplitude"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A wire of length L and mass M is stretched under tension T. The speed of transverse waves is:",
+    "options": ["√(T/M)", "√(T/ML)", "√(T/μ)", "√(M/T)"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The focal length of a convex lens is 20 cm. An object is placed at 30 cm. The image distance is:",
+    "options": ["60 cm", "15 cm", "12 cm", "20 cm"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in compressing 1 mole of an ideal gas isothermally to half its volume is:",
+    "options": ["RT ln2", "RT/2", "2RT", "RT"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "In Young’s double slit experiment, the ratio of intensities of maxima to minima is:",
+    "options": ["1", "2", "∞", "0"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The wavelength of first line of Balmer series of hydrogen is 6563 Å. The Rydberg constant is:",
+    "options": ["1.097 × 10⁷ m⁻¹", "1.097 × 10⁶ m⁻¹", "1.097 × 10⁵ m⁻¹", "1.097 × 10⁴ m⁻¹"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "A prism of angle 60° has refractive index √3. The angle of minimum deviation is:",
+    "options": ["30°", "45°", "60°", "90°"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "In a resonance tube closed at one end, the fundamental frequency is 100 Hz. The frequency of third harmonic is:",
+    "options": ["200 Hz", "300 Hz", "400 Hz", "500 Hz"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The magnetic susceptibility of a paramagnetic material varies with temperature as:",
+    "options": ["χ ∝ 1/T", "χ ∝ T", "χ ∝ 1/T²", "χ ∝ √T"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "An electron accelerated through 100 V has de-Broglie wavelength approximately:",
+    "options": ["1.23 nm", "0.123 nm", "12.3 nm", "0.0123 nm"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A Carnot engine operates between 400 K and 300 K. If it absorbs 600 J of heat, the work done is:",
+    "options": ["200 J", "150 J", "100 J", "250 J"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The magnetic field at the center of a circular coil of radius r carrying current I is proportional to:",
+    "options": ["I/r", "I/r²", "r/I", "I²/r"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "A solid sphere and a solid disk of same mass and radius roll down an incline. The ratio of their accelerations is:",
+    "options": ["1:1", "10:7", "7:10", "2:1"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A projectile is fired at an angle of 45° with velocity 20 m/s. The maximum height reached is:",
+    "options": ["5 m", "10 m", "15 m", "20 m"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "Two resistors of 4 Ω and 6 Ω are connected in parallel. Their equivalent resistance is:",
+    "options": ["2.4 Ω", "10 Ω", "5 Ω", "6 Ω"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of a simple pendulum of length 1 m on Earth (g = 9.8 m/s²) is:",
+    "options": ["1.0 s", "2.0 s", "3.0 s", "4.0 s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The potential energy of a spring is proportional to:",
+    "options": ["x", "x²", "1/x", "√x"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The current in a circuit is given by I = I₀ sin(ωt). The rms value of current is:",
+    "options": ["I₀", "I₀/√2", "√2 I₀", "I₀²"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The half-life of a radioactive isotope is 10 minutes. Its decay constant is:",
+    "options": ["0.069 min⁻¹", "0.1 min⁻¹", "0.693 min⁻¹", "0.007 min⁻¹"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in moving a charge q across a potential difference V is:",
+    "options": ["q/V", "qV", "V/q", "q²V"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The magnetic flux linked with a coil changes from 0.1 Wb to 0.5 Wb in 0.1 s. The induced emf is:",
+    "options": ["1 V", "2 V", "3 V", "4 V"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The focal length of a concave mirror is 20 cm. The image of an object placed at 40 cm is:",
+    "options": ["Real, inverted, same size", "Real, inverted, diminished", "Real, inverted, magnified", "Virtual, erect"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The velocity of sound in air at 27°C is approximately:",
+    "options": ["300 m/s", "330 m/s", "350 m/s", "370 m/s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The electric field at a point due to a point charge q at distance r is:",
+    "options": ["q/r", "q/r²", "q²/r", "q/r³"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The kinetic energy of a body of mass m moving with velocity v is:",
+    "options": ["mv", "mv²", "½mv²", "m/v²"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of Planck’s constant is:",
+    "options": ["J", "Js", "J/s", "Nm"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The capacitance of a parallel plate capacitor is proportional to:",
+    "options": ["Area of plates", "Distance between plates", "Square of distance", "Inverse of area"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration due to gravity on the surface of Earth is maximum at:",
+    "options": ["Equator", "Poles", "Tropics", "Everywhere same"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A body of mass 1 kg is moving with velocity 2 m/s. Its momentum is:",
+    "options": ["0.5 kg·m/s", "1 kg·m/s", "2 kg·m/s", "4 kg·m/s"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The potential difference across a 10 Ω resistor carrying 2 A current is:",
+    "options": ["5 V", "10 V", "20 V", "40 V"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration due to gravity decreases with:",
+    "options": ["Altitude", "Depth", "Rotation of Earth", "All of these"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The SI unit of electric charge is:",
+    "options": ["Ampere", "Coulomb", "Volt", "Farad"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in moving a 2 C charge through a potential difference of 12 V is:",
+    "options": ["6 J", "12 J", "24 J", "48 J"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of a satellite in circular orbit depends on:",
+    "options": ["Radius of orbit", "Mass of satellite", "Velocity of satellite", "None"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The resistance of a wire is R. If its length is doubled and area halved, its new resistance is:",
+    "options": ["2R", "4R", "R/2", "R/4"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The power dissipated in a 5 Ω resistor carrying 2 A current is:",
+    "options": ["5 W", "10 W", "15 W", "20 W"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The escape velocity from Earth does not depend on:",
+    "options": ["Mass of body", "Radius of Earth", "Gravitational constant", "Mass of Earth"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of magnetic flux is:",
+    "options": ["Tesla", "Weber", "Henry", "Ampere"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The wavelength of X-rays is of the order of:",
+    "options": ["10⁻¹ m", "10⁻⁶ m", "10⁻⁹ m", "10⁻¹² m"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The refractive index of a medium is defined as:",
+    "options": ["c/v", "v/c", "c×v", "c−v"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in moving a unit positive charge around a closed path in an electric field is:",
+    "options": ["Positive", "Negative", "Zero", "Infinite"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of force is:",
+    "options": ["MLT⁻²", "ML²T⁻²", "M²LT⁻²", "MLT⁻¹"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration of a body moving in a circle with constant speed is directed:",
+    "options": ["Tangential", "Radial inward", "Radial outward", "Zero"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A body of mass 5 kg is lifted vertically through 2 m. The work done is:",
+    "options": ["10 J", "50 J", "100 J", "200 J"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration due to gravity on the Moon is 1/6th that on Earth. The time period of a pendulum on Moon compared to Earth is:",
+    "options": ["Same", "√6 times", "1/√6 times", "6 times"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of electric power is:",
+    "options": ["Volt", "Ampere", "Watt", "Joule"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The potential energy of a satellite of mass m in orbit of radius r around Earth is:",
+    "options": ["−GMm/r", "GMm/r", "½GMm/r", "−½GMm/r"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of oscillation of a spring-mass system is proportional to:",
+    "options": ["√m", "1/√m", "√k", "1/√k"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The force between two charges q₁ and q₂ separated by distance r is proportional to:",
+    "options": ["q₁q₂/r²", "q₁q₂/r", "q₁+q₂", "q₁q₂r²"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of magnetic field is:",
+    "options": ["Tesla", "Weber", "Henry", "Ampere"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The kinetic energy of a body moving in a circle with constant speed is:",
+    "options": ["Constant", "Zero", "Increasing", "Decreasing"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of energy is:",
+    "options": ["ML²T⁻²", "MLT⁻²", "M²LT⁻²", "MLT⁻¹"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in moving a charge around a closed path in a magnetic field is:",
+    "options": ["Zero", "Positive", "Negative", "Infinite"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The escape velocity from a planet depends on:",
+    "options": ["Mass of planet", "Radius of planet", "Gravitational constant", "All of these"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of electric field is:",
+    "options": ["N/C", "C/N", "V", "Ω"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The refractive index of water is 4/3. The speed of light in water is:",
+    "options": ["3×10⁸ m/s", "2.25×10⁸ m/s", "4×10⁸ m/s", "1.5×10⁸ m/s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of a simple pendulum depends on:",
+    "options": ["Length", "Mass", "Amplitude", "All of these"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of resistance is:",
+    "options": ["Volt", "Ampere", "Ohm", "Watt"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The potential energy of a spring stretched by x is:",
+    "options": ["kx", "½kx²", "kx²", "½kx"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of electric potential is:",
+    "options": ["Volt", "Ampere", "Coulomb", "Ohm"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration due to gravity at height h above Earth’s surface is:",
+    "options": ["g", "g(1−h/R)", "g(R/(R+h))²", "g(R+h)/R"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of capacitance is:",
+    "options": ["Farad", "Henry", "Weber", "Tesla"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of oscillation of a simple pendulum is independent of:",
+    "options": ["Length", "Acceleration due to gravity", "Mass", "Amplitude (for small oscillations)"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of velocity is:",
+    "options": ["LT⁻¹", "L²T⁻²", "MLT⁻²", "MT⁻¹"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The escape velocity from Earth is 11.2 km/s. The escape velocity from Mars (radius half of Earth, same density) is:",
+    "options": ["11.2 km/s", "7.9 km/s", "5.6 km/s", "15.8 km/s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of frequency is:",
+    "options": ["Hertz", "Second", "Newton", "Joule"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in moving a charge q through potential difference V is:",
+    "options": ["q/V", "qV", "V/q", "q²V"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The kinetic energy of a body of mass m moving with velocity v is:",
+    "options": ["mv", "mv²", "½mv²", "m/v²"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of pressure is:",
+    "options": ["Pascal", "Newton", "Joule", "Watt"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of work is:",
+    "options": ["ML²T⁻²", "MLT⁻²", "M²LT⁻²", "MLT⁻¹"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of oscillation of a spring-mass system depends on:",
+    "options": ["Mass", "Spring constant", "Both mass and spring constant", "Neither"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of energy is:",
+    "options": ["Joule", "Watt", "Volt", "Ampere"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration of a body moving in a circle with constant speed is:",
+    "options": ["Tangential", "Radial inward", "Radial outward", "Zero"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of inductance is:",
+    "options": ["Henry", "Tesla", "Weber", "Farad"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of oscillation of a spring-mass system is T. If mass is quadrupled, new time period is:",
+    "options": ["T", "2T", "4T", "T/2"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of momentum is:",
+    "options": ["MLT⁻¹", "ML²T⁻²", "M²LT⁻²", "MLT⁻²"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in moving a charge in an equipotential surface is:",
+    "options": ["Positive", "Negative", "Zero", "Infinite"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of electric flux is:",
+    "options": ["Nm²/C", "N/C", "C/N", "J/C"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration due to gravity at depth d is:",
+    "options": ["g", "g(1−d/R)", "g(R/(R+d))²", "g(R+d)/R"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of angular velocity is:",
+    "options": ["rad/s", "m/s", "s⁻¹", "Hz"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The kinetic energy of a satellite in orbit is:",
+    "options": ["GMm/2r", "GMm/r", "½GMm/r", "Zero"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of electric current is:",
+    "options": ["Volt", "Ampere", "Coulomb", "Ohm"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of pressure is:",
+    "options": ["ML⁻¹T⁻²", "ML²T⁻²", "MLT⁻²", "M²LT⁻²"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The escape velocity from Earth is 11.2 km/s. The escape velocity from a planet of same radius but half mass is:",
+    "options": ["11.2 km/s", "7.9 km/s", "5.6 km/s", "15.8 km/s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of work is:",
+    "options": ["Joule", "Watt", "Volt", "Ampere"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The acceleration of a body moving in a circle with constant speed is directed:",
+    "options": ["Tangential", "Radial inward", "Radial outward", "Zero"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The unit of power is:",
+    "options": ["Watt", "Joule", "Volt", "Ampere"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of force is:",
+    "options": ["MLT⁻²", "ML²T⁻²", "M²LT⁻²", "MLT⁻¹"],
+    "answer": 0
+  }
+];
+
+
+
+        // remove fixed +1 hack that could create an empty question
+        // (questions count is already in the array size)
+        const timePerQuestion = 60; // seconds per question (NEET approx 1 min per question)
+        const totalTime = questionsData.length * timePerQuestion;
+
+        time = localStorage.getItem("neet_time")
+            ? parseInt(localStorage.getItem("neet_time"))
+            : totalTime;
+
+        if (time <= 0 || time > totalTime) {
+            time = totalTime;
+            localStorage.setItem("neet_time", time);
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        document.getElementById("timer").innerText = formatTime(time);
+
+        const questionsDiv = document.getElementById("questions");
+        const paletteDiv = document.getElementById("palette");
+
+        questionsData.forEach((q, index) => {
+            const qDiv = document.createElement("div");
+            qDiv.className = "question";
+            qDiv.id = "q" + index;
+
+            let savedAnswer = localStorage.getItem("neet_ans_" + index);
+
+            qDiv.innerHTML = `
+    <p><b>Q${index + 1}.</b> ${q.question}</p>
+    ${q.options.map((opt, i) => `
+        <label>
+        <input type="radio" name="q${index}" value="${i}" ${savedAnswer !== null && parseInt(savedAnswer) === i ? "checked" : ""}>
+        ${opt}
+        </label><br>`).join("")}
+    `;
+
+            questionsDiv.appendChild(qDiv);
+
+            qDiv.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener("change", function () {
+                    saveAnswer(index, this.value);
+                });
+            });
+
+
+            const btn = document.createElement("button");
+            btn.innerText = index + 1;
+            btn.className = "palette-btn not-visited";
+            btn.id = "p" + index;
+            btn.onclick = () => document.getElementById("q" + index).scrollIntoView();
+            paletteDiv.appendChild(btn);
+
+            if (savedAnswer !== null) updatePalette(index, true);
+        });
+
+        function saveAnswer(qIndex, optIndex) {
+            localStorage.setItem("neet_ans_" + qIndex, optIndex);
+            updatePalette(qIndex, true);
+        }
+
+        function updatePalette(index, answered) {
+            const btn = document.getElementById("p" + index);
+            btn.className = "palette-btn " + (answered ? "answered" : "not-answered");
+        }
+
+        function submitExam() {
+            let score = 0;
+            let attempted = 0;
+            const maxScore = questionsData.length * 4;
+
+            questionsData.forEach((q, i) => {
+                const qDiv = document.getElementById("q" + i);
+                const selected = localStorage.getItem("neet_ans_" + i);
+                const options = qDiv.querySelectorAll('input[type="radio"]');
+
+                options.forEach((opt, index) => {
+                    // Remove previous classes
+                    opt.parentElement.classList.remove("correct", "incorrect");
+
+                    if (index === q.answer) {
+                        // Correct answer
+                        opt.parentElement.classList.add("correct");
+                    }
+
+                    if (selected !== null && parseInt(selected) === index && parseInt(selected) !== q.answer) {
+                        // Wrongly selected option
+                        opt.parentElement.classList.add("incorrect");
+                    }
+                });
+
+                if (selected !== null) {
+                    attempted++;
+                    if (parseInt(selected) === q.answer) {
+                        score += 4;
+                    } else {
+                        score -= 1;
+                    }
+                }
+            });
+
+            alert("Score: " + score + " / " + maxScore);
+            localStorage.setItem("neet_score", score);
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let score = localStorage.getItem("neet_score") || 0;
+            const maxScore = questionsData.length * 4;
+            doc.text("NEET Mock Test Result", 20, 20);
+            doc.text("Score: " + score + " / " + maxScore, 20, 40);
+            doc.save("neet-result.pdf");
+        }
+
+        // Timer
+        setInterval(() => {
+            if (time <= 0) {
+                submitExam();
+                return;
+            }
+            time--;
+            localStorage.setItem("neet_time", time);
+            let h = Math.floor(time / 3600);
+            let m = Math.floor((time % 3600) / 60);
+            let s = time % 60;
+            document.getElementById("timer").innerText =
+                `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }, 1000);
+
+    </script>
+</body>
+
+</html>
