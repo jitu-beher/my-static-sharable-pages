@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Full Mock Test</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f4f9;
+        }
+
+        header {
+            background: #0d47a1;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            margin: 10px 0;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+        }
+
+        #timer {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        #questions {
+            width: 100%;
+            padding: 20px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            flex: 1 1 100%;
+        }
+
+        #palette {
+            width: 100%;
+            background: white;
+            padding: 10px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            border-top: 2px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: flex-start;
+            align-content: flex-start;
+            max-height: 150px;
+        }
+
+        .question {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .question p {
+            margin: 10px 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+
+        .question label {
+            display: block;
+            padding: 8px 0;
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+            margin-bottom: 5px;
+        }
+
+        .question input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .palette-btn {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .not-visited {
+            background: #ccc;
+            color: #333;
+        }
+
+        .answered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .not-answered {
+            background: #f44336;
+            color: white;
+        }
+
+        .marked {
+            background: #ff9800;
+            color: white;
+        }
+
+        .button-container {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #ddd;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #0d47a1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        button:active {
+            background: #063d91;
+        }
+
+        .correct {
+            background-color: #c8e6c9 !important;
+        }
+
+        .incorrect {
+            background-color: #ffcdd2 !important;
+        }
+
+        /* Tablet and larger screens */
+        @media (min-width: 768px) {
+            .container {
+                flex-wrap: nowrap;
+            }
+
+            #questions {
+                width: 75%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                padding: 20px;
+            }
+
+            #palette {
+                width: 25%;
+                max-height: 85vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                border-left: 2px solid #ddd;
+                border-top: none;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                align-content: flex-start;
+                padding: 15px;
+            }
+
+            .palette-btn {
+                width: 100%;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            header {
+                padding: 10px;
+            }
+
+            header h2 {
+                margin: 5px 0;
+            }
+
+            .question {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            button {
+                padding: 8px 12px;
+                margin: 3px;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h2>NEET 2026 Full Length Mock</h2>
+        <div id="timer">Loading...</div>
+    </header>
+
+    <div class="container">
+        <div id="questions"></div>
+        <div id="palette"></div>
+    </div>
+
+    <div class="button-container">
+        <button onclick="submitExam()">Submit</button>
+        <button onclick="exportPDF()">Export Result PDF</button>
+    </div>
+
+    <script>
+        let time;
+
+        const questionsData = [
+    {
+    "subject": "Biology",
+    "question": "Which of the following is the universal electron carrier in cellular respiration?",
+    "options": ["ATP", "NADH", "FAD", "GTP"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the first stable product of C4 photosynthesis?",
+    "options": ["3‑phosphoglycerate", "Oxaloacetate", "Pyruvate", "Malate"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A satellite of mass m is revolving in a circular orbit of radius R around Earth. If its speed is doubled, the orbit will become:",
+    "options": ["Circular with radius 2R", "Elliptical", "Parabolic", "Not possible"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "In Young’s double slit experiment, the separation between slits is halved. The fringe width will:",
+    "options": ["Double", "Halve", "Remain same", "Become zero"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The efficiency of a Carnot engine operating between 600 K and 300 K is:",
+    "options": ["25%", "50%", "75%", "100%"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following oxides is most acidic?",
+    "options": ["MgO", "CaO", "SO2", "Na2O"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The hybridisation of carbon in benzene is:",
+    "options": ["sp³", "sp²", "sp", "None"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following complexes exhibits geometrical isomerism?",
+    "options": ["[Co(NH3)6]³⁺", "[PtCl4]²⁻", "[Cr(en)2Cl2]⁺", "[Fe(CN)6]³⁻"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The reagent used to distinguish aldehydes from ketones is:",
+    "options": ["Fehling’s solution", "Tollen’s reagent", "KMnO4", "Conc. H2SO4"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which plant shows obligate mutualism with moths for pollination?",
+    "options": ["Banana", "Yucca", "Hydrilla", "Viola"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Double fertilisation in angiosperms involves:",
+    "options": ["Two male gametes with one egg", "One male gamete with two polar nuclei", "Syngamy and triple fusion", "Two male gametes with two eggs"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following organisms does not produce oxygen during photosynthesis?",
+    "options": ["Chara", "Nostoc", "Cycas", "Green sulphur bacteria"],
+    "answer": 3
+  },
+  {
+    "subject": "Biology",
+    "question": "The genetic code is:",
+    "options": ["Ambiguous", "Overlapping", "Universal", "Non-degenerate"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a greenhouse gas?",
+    "options": ["O2", "N2", "CO2", "Ar"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a C4 plant?",
+    "options": ["Rice", "Wheat", "Maize", "Barley"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "The enzyme DNA polymerase is active during:",
+    "options": ["Replication", "Transcription", "Translation", "Mutation"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is not a product of Krebs cycle?",
+    "options": ["ATP", "NADH", "FADH2", "Pyruvate"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "A simple pendulum has a time period of 2 s on Earth. What will be its time period on Moon where g = 1/6 of Earth?",
+    "options": ["2 s", "4.9 s", "6.9 s", "12 s"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The photoelectric threshold wavelength of a metal is 400 nm. Light of wavelength 300 nm is incident. The maximum kinetic energy of emitted electrons is:",
+    "options": ["0.5 eV", "1.0 eV", "2.0 eV", "3.0 eV"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "In an LCR circuit, resonance occurs when:",
+    "options": ["XL = XC", "XL > XC", "XL < XC", "XL = R"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum ionic character?",
+    "options": ["NaCl", "MgCl2", "AlCl3", "CCl4"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The reagent used in iodoform test is:",
+    "options": ["NaOH + I2", "KMnO4", "FeCl3", "Conc. H2SO4"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is a zwitterion?",
+    "options": ["Aniline", "Glycine", "Benzoic acid", "Acetanilide"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The geometry of [Ni(CO)4] is:",
+    "options": ["Square planar, paramagnetic", "Tetrahedral, diamagnetic", "Square planar, diamagnetic", "Tetrahedral, paramagnetic"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is not a greenhouse gas?",
+    "options": ["CO2", "CH4", "N2O", "O2"],
+    "answer": 3
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a C3 plant?",
+    "options": ["Rice", "Maize", "Sugarcane", "Sorghum"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "The enzyme reverse transcriptase is used in:",
+    "options": ["DNA replication", "RNA transcription", "cDNA synthesis", "Protein translation"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is not a product of glycolysis?",
+    "options": ["ATP", "NADH", "Pyruvate", "FADH2"],
+    "answer": 3
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a nitrogen‑fixing cyanobacterium?",
+    "options": ["Nostoc", "Chara", "Cycas", "Spirogyra"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which hormone regulates seed dormancy?",
+    "options": ["Auxin", "Gibberellin", "Abscisic acid", "Cytokinin"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a vestigial organ in humans?",
+    "options": ["Appendix", "Liver", "Pancreas", "Kidney"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a pioneer species in ecological succession?",
+    "options": ["Mosses", "Lichens", "Shrubs", "Trees"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A proton and an electron are placed in a uniform electric field. The ratio of their accelerations will be:",
+    "options": ["1", "1836", "1/1836", "Zero"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The de‑Broglie wavelength of a particle is inversely proportional to:",
+    "options": ["Momentum", "Energy", "Velocity", "Mass"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "In a common emitter transistor amplifier, if current gain is 100 and base current is 20 μA, the collector current is:",
+    "options": ["2 mA", "20 mA", "200 μA", "0.2 mA"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum electron affinity?",
+    "options": ["Fluorine", "Chlorine", "Oxygen", "Nitrogen"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is most easily liquefied?",
+    "options": ["O2", "H2", "NH3", "CO2"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following shows linkage isomerism?",
+    "options": ["[Co(NH3)6]³⁺", "[Co(NO2)(NH3)5]²⁺", "[Fe(CN)6]³⁻", "[PtCl4]²⁻"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following oxides is amphoteric?",
+    "options": ["Na2O", "Al2O3", "CO2", "SO2"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a nitrogen‑fixing symbiotic bacterium?",
+    "options": ["Rhizobium", "Azotobacter", "Clostridium", "Nostoc"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a C4 pathway enzyme?",
+    "options": ["PEP carboxylase", "Rubisco", "Hexokinase", "ATP synthase"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a greenhouse gas?",
+    "options": ["CO2", "O2", "N2", "Ar"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is not a product of Calvin cycle?",
+    "options": ["Glucose", "ATP", "NADPH", "CO2"],
+    "answer": 3
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a free‑living nitrogen fixer?",
+    "options": ["Azotobacter", "Rhizobium", "Frankia", "Clostridium"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a greenhouse gas produced by rice fields?",
+    "options": ["CO2", "CH4", "N2O", "O3"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The escape velocity from Earth is 11.2 km/s. If Earth’s radius were doubled but mass unchanged, the new escape velocity would be:",
+    "options": ["11.2 km/s", "7.9 km/s", "5.6 km/s", "15.8 km/s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "In an electromagnetic wave, the electric field vector is along +y axis and propagation is along +x axis. The magnetic field vector will be along:",
+    "options": ["+z", "−z", "−y", "+x"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The efficiency of an ideal heat engine working between 400 K and 300 K is:",
+    "options": ["25%", "50%", "75%", "100%"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum electronegativity?",
+    "options": ["Oxygen", "Nitrogen", "Fluorine", "Chlorine"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is most acidic?",
+    "options": ["BaO", "MgO", "SO2", "Na2O"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following complexes shows optical isomerism?",
+    "options": ["[Co(NH3)6]³⁺", "[PtCl4]²⁻", "[Cr(en)3]³⁺", "[Fe(CN)6]³⁻"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is a Lewis acid?",
+    "options": ["BF3", "NH3", "H2O", "OH⁻"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a greenhouse gas produced by wetlands?",
+    "options": ["CO2", "CH4", "N2O", "O3"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A tuning fork of frequency 256 Hz resonates with an air column of length 33 cm. The velocity of sound in air is approximately:",
+    "options": ["256 m/s", "330 m/s", "512 m/s", "660 m/s"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The magnetic potential energy stored in an inductor of inductance 2 H carrying current 3 A is:",
+    "options": ["3 J", "6 J", "9 J", "12 J"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The angular magnification of a telescope is large when the objective has:",
+    "options": ["Large focal length and large diameter", "Large focal length and small diameter", "Small focal length and large diameter", "Small focal length and small diameter"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following shows geometrical isomerism?",
+    "options": ["[Co(NH3)6]³⁺", "[Pt(NH3)2Cl2]", "[Fe(CN)6]³⁻", "[Ni(CO)4]"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The solubility product of BaSO4 is 1.08 × 10⁻¹⁰ mol² L⁻². The solubility in mol/L is:",
+    "options": ["1.04 × 10⁻⁵", "1.04 × 10⁻⁶", "1.04 × 10⁻⁷", "1.04 × 10⁻⁸"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has the highest boiling point?",
+    "options": ["NH3", "PH3", "AsH3", "SbH3"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used as an electrolyte in the Hall–Heroult process for aluminium extraction?",
+    "options": ["NaCl", "Cryolite", "CaCO3", "KOH"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is most easily reduced?",
+    "options": ["Al2O3", "MgO", "ZnO", "CuO"],
+    "answer": 3
+  },
+
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has the highest ionisation energy?",
+    "options": ["Na", "Mg", "Al", "Ne"],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used as an antiknock compound in petrol?",
+    "options": ["Tetraethyl lead", "Methanol", "Benzene", "Acetone"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is an example of a coordination compound?",
+    "options": ["NaCl", "[Cu(NH3)4]SO4", "H2O", "CH4"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has the maximum number of unpaired electrons?",
+    "options": ["Fe²⁺", "Mn²⁺", "Cu²⁺", "Zn²⁺"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which hormone promotes fruit ripening?",
+    "options": ["Auxin", "Gibberellin", "Ethylene", "Cytokinin"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "A body of mass 2 kg is moving with velocity 4 m/s. Its kinetic energy is:",
+    "options": ["4 J", "8 J", "12 J", "16 J"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of a spring‑mass system is T. If the mass is quadrupled, the new time period is:",
+    "options": ["T", "2T", "4T", "T/2"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of pressure is:",
+    "options": ["ML⁻¹T⁻²", "ML²T⁻²", "MLT⁻²", "M²LT⁻²"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum conductivity?",
+    "options": ["0.1 M NaCl", "0.1 M CH3COOH", "0.1 M NH4OH", "0.1 M H2O"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "The IUPAC name of CH3–CH2–OH is:",
+    "options": ["Methanol", "Ethanol", "Propanol", "Butanol"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in vulcanisation of rubber?",
+    "options": ["Sulphur", "Phosphorus", "Chlorine", "Nitrogen"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which enzyme is responsible for transcription in prokaryotes?",
+    "options": ["DNA polymerase", "RNA polymerase", "Ligase", "Helicase"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A body of mass 1 kg is lifted to a height of 10 m. The potential energy gained is:",
+    "options": ["10 J", "100 J", "1000 J", "1 J"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The half‑life of a radioactive isotope is 10 minutes. The fraction remaining after 30 minutes is:",
+    "options": ["1/2", "1/4", "1/8", "1/16"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of force is:",
+    "options": ["MLT⁻²", "ML²T⁻²", "M²LT⁻²", "ML⁻¹T⁻²"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is a strong electrolyte?",
+    "options": ["NaCl", "CH3COOH", "NH4OH", "H2O"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is amphoteric?",
+    "options": ["Na2O", "Al2O3", "SO2", "CO2"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following complexes shows ionisation isomerism?",
+    "options": ["[Co(NH3)6]³⁺", "[CoCl(NH3)5]SO4", "[Fe(CN)6]³⁻", "[Ni(CO)4]"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in the manufacture of nitric acid?",
+    "options": ["Haber process", "Contact process", "Solvay process", "Ostwald process"],
+    "answer": 3
+  },
+  {
+    "subject": "Biology",
+    "question": "Which hormone promotes seed germination?",
+    "options": ["Auxin", "Gibberellin", "Abscisic acid", "Cytokinin"],
+    "answer": 1
+  },
+
+  {
+    "subject": "Physics",
+    "question": "A projectile is fired at 30° with velocity 20 m/s. The maximum height reached is:",
+    "options": ["5.1 m", "10.2 m", "15.3 m", "20.4 m"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of a satellite orbiting close to Earth depends on:",
+    "options": ["Mass of satellite", "Radius of Earth", "Velocity of satellite", "None"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The SI unit of magnetic flux is:",
+    "options": ["Tesla", "Weber", "Henry", "Ampere"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is a reducing sugar?",
+    "options": ["Sucrose", "Glucose", "Starch", "Cellulose"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is most basic?",
+    "options": ["NH3", "PH3", "AsH3", "SbH3"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in the silvering of mirrors?",
+    "options": ["AgNO3", "NH4OH", "Glucose", "All of these"],
+    "answer": 3
+  },
+  {
+    "subject": "Biology",
+    "question": "Which hormone promotes flowering in plants?",
+    "options": ["Auxin", "Gibberellin", "Florigen", "Cytokinin"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which enzyme is responsible for transcription?",
+    "options": ["DNA polymerase", "RNA polymerase", "Ligase", "Helicase"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a greenhouse gas produced by livestock farming?",
+    "options": ["CO2", "CH4", "N2O", "O3"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "A wire of length L and resistance R is stretched to double its length. Its new resistance will be:",
+    "options": ["R", "2R", "4R", "R/2"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The work done in moving a charge q across a potential difference V is:",
+    "options": ["q/V", "V/q", "qV", "V²/q"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "The focal length of a convex lens is 20 cm. Its power is:",
+    "options": ["2 D", "5 D", "10 D", "20 D"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum bond angle?",
+    "options": ["NH3", "H2O", "CH4", "BF3"],
+    "answer": 3
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is a Lewis base?",
+    "options": ["BF3", "NH3", "AlCl3", "FeCl3"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum covalent character?",
+    "options": ["NaCl", "MgCl2", "AlCl3", "CCl4"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of glycolysis?",
+    "options": ["Nucleus", "Mitochondria", "Cytoplasm", "Chloroplast"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the genetic material in retroviruses?",
+    "options": ["DNA", "RNA", "Protein", "Plasmid"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a pioneer species in xerarch succession?",
+    "options": ["Mosses", "Lichens", "Shrubs", "Trees"],
+    "answer": 1
+  },
+
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of Krebs cycle?",
+    "options": ["Cytoplasm", "Mitochondrial matrix", "Nucleus", "Chloroplast"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following hormones promotes cell elongation?",
+    "options": ["Auxin", "Gibberellin", "Cytokinin", "Ethylene"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the structural unit of protein?",
+    "options": ["Nucleotide", "Amino acid", "Fatty acid", "Monosaccharide"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The escape velocity on the Moon is 2.3 km/s. If a projectile is fired at 3 km/s, it will:",
+    "options": ["Return to surface", "Escape Moon’s gravity", "Move in circular orbit", "Fall back with reduced speed"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of Planck’s constant is:",
+    "options": ["ML²T⁻¹", "ML²T⁻²", "MLT⁻²", "M²LT⁻²"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of oscillation of a simple pendulum depends on:",
+    "options": ["Mass of bob", "Length of pendulum", "Amplitude", "Material of string"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum lattice energy?",
+    "options": ["NaCl", "KCl", "MgO", "CaO"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in the manufacture of soap?",
+    "options": ["NaOH", "HCl", "H2SO4", "NH3"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is a greenhouse gas?",
+    "options": ["CO2", "O2", "N2", "Ar"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of photosynthesis?",
+    "options": ["Nucleus", "Mitochondria", "Chloroplast", "Cytoplasm"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the structural unit of DNA?",
+    "options": ["Nucleotide", "Amino acid", "Fatty acid", "Monosaccharide"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a pioneer species in hydrosere succession?",
+    "options": ["Phytoplankton", "Mosses", "Shrubs", "Trees"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of protein synthesis?",
+    "options": ["Nucleus", "Ribosome", "Mitochondria", "Chloroplast"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the structural unit of carbohydrates?",
+    "options": ["Nucleotide", "Amino acid", "Fatty acid", "Monosaccharide"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The time period of a simple harmonic oscillator is 2 s. Its frequency is:",
+    "options": ["0.5 Hz", "1 Hz", "2 Hz", "4 Hz"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The dimensional formula of velocity is:",
+    "options": ["LT⁻¹", "L²T⁻²", "MLT⁻²", "M²LT⁻²"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "The SI unit of resistance is:",
+    "options": ["Volt", "Ampere", "Ohm", "Watt"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum electronegativity?",
+    "options": ["Oxygen", "Nitrogen", "Fluorine", "Chlorine"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in the manufacture of glass?",
+    "options": ["Na2CO3", "CaCO3", "SiO2", "All of these"],
+    "answer": 3
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of Calvin cycle?",
+    "options": ["Cytoplasm", "Mitochondria", "Chloroplast stroma", "Nucleus"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the structural unit of nucleic acids?",
+    "options": ["Nucleotide", "Amino acid", "Fatty acid", "Monosaccharide"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a pioneer species in primary succession?",
+    "options": ["Lichens", "Mosses", "Shrubs", "Trees"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which hormone promotes cell division?",
+    "options": ["Auxin", "Gibberellin", "Cytokinin", "Ethylene"],
+    "answer": 2
+  },
+
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of ATP synthesis?",
+    "options": ["Nucleus", "Mitochondria", "Chloroplast", "Cytoplasm"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the structural unit of polysaccharides?",
+    "options": ["Nucleotide", "Amino acid", "Fatty acid", "Monosaccharide"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "In a photoelectric experiment, stopping potential depends on:",
+    "options": ["Intensity of light", "Frequency of light", "Work function only", "Distance between plates"],
+    "answer": 1
+  },
+  {
+    "subject": "Physics",
+    "question": "The half‑life of a radioactive isotope is independent of:",
+    "options": ["Temperature", "Pressure", "Chemical state", "All of these"],
+    "answer": 3
+  },
+  {
+    "subject": "Physics",
+    "question": "The magnetic field inside a long solenoid carrying current is:",
+    "options": ["Zero", "Uniform", "Non‑uniform", "Depends on radius"],
+    "answer": 1
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in the froth flotation process?",
+    "options": ["Pine oil", "Coke", "Charcoal", "Graphite"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following has maximum paramagnetism?",
+    "options": ["O2", "N2", "CO2", "H2O"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is an example of heterogeneous catalysis?",
+    "options": ["Hydrogenation of oils", "Decomposition of KI", "Hydrolysis of ester", "Fermentation of sugar"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in the manufacture of bleaching powder?",
+    "options": ["Ca(OH)2 + Cl2", "CaCO3 + HCl", "CaO + H2O", "CaSO4 + H2O"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of ribosomal RNA synthesis?",
+    "options": ["Nucleolus", "Mitochondria", "Cytoplasm", "Chloroplast"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a disease caused by protozoa?",
+    "options": ["Tuberculosis", "Malaria", "Typhoid", "Influenza"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a chromosomal disorder?",
+    "options": ["Diabetes", "Down’s syndrome", "Polio", "Asthma"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a biodegradable pollutant?",
+    "options": ["Plastic", "DDT", "Sewage", "Mercury"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a secondary pollutant?",
+    "options": ["SO2", "NO2", "O3", "CO"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is an example of ex‑situ conservation?",
+    "options": ["National park", "Wildlife sanctuary", "Botanical garden", "Biosphere reserve"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a bacterial disease?",
+    "options": ["AIDS", "Malaria", "Tuberculosis", "Ringworm"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a sexually transmitted disease?",
+    "options": ["Malaria", "AIDS", "Tuberculosis", "Typhoid"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a Mendelian disorder?",
+    "options": ["Down’s syndrome", "Thalassemia", "Klinefelter’s syndrome", "Turner’s syndrome"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a greenhouse gas produced by automobiles?",
+    "options": ["CO2", "O2", "N2", "Ar"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a pioneer species in sand dune succession?",
+    "options": ["Grasses", "Lichens", "Shrubs", "Trees"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a hormone secreted by pancreas?",
+    "options": ["Insulin", "Thyroxine", "Adrenaline", "Testosterone"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a nitrogen‑fixing symbiotic association?",
+    "options": ["Rhizobium in legumes", "Azotobacter in soil", "Nostoc in water", "Clostridium in anaerobic soil"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a viral disease?",
+    "options": ["Malaria", "Polio", "Tuberculosis", "Cholera"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a vestigial structure in whales?",
+    "options": ["Pelvic bones", "Liver", "Heart", "Kidney"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a pioneer species in mangrove succession?",
+    "options": ["Avicennia", "Shrubs", "Grasses", "Trees"],
+    "answer": 0
+  },
+  {
+    "question": "A ball is thrown vertically upward with velocity 20 m/s. The maximum height reached is:",
+    "options": ["10 m", "20 m", "30 m", "40 m"],
+    "answer": 2
+  },
+  {
+    "question": "The acceleration due to gravity at Earth’s surface is g. At a height equal to Earth’s radius, it becomes:",
+    "options": ["g", "g/2", "g/4", "g/9"],
+    "answer": 2
+  },
+  {
+    "question": "The work done in moving a 5 C charge through a potential difference of 12 V is:",
+    "options": ["12 J", "24 J", "60 J", "120 J"],
+    "answer": 2
+  },
+  {
+    "question": "The unit of electric field is:",
+    "options": ["N/C", "J/C", "V", "C"],
+    "answer": 0
+  },
+  {
+    "question": "The time period of a simple pendulum of length 1 m on Earth (g = 9.8 m/s²) is approximately:",
+    "options": ["1 s", "2 s", "3 s", "4 s"],
+    "answer": 1
+  },
+  {
+    "question": "The escape velocity on Earth is 11.2 km/s. On a planet with twice Earth’s radius and same mass, it will be:",
+    "options": ["11.2 km/s", "7.9 km/s", "5.6 km/s", "15.8 km/s"],
+    "answer": 1
+  },
+  {
+    "question": "The dimensional formula of momentum is:",
+    "options": ["MLT⁻¹", "ML²T⁻²", "M²LT⁻²", "ML⁻¹T⁻²"],
+    "answer": 0
+  },
+  {
+    "question": "The focal length of a convex lens is 25 cm. Its power is:",
+    "options": ["2 D", "3 D", "4 D", "5 D"],
+    "answer": 2
+  },
+  {
+    "question": "The speed of sound in air at 27°C is 330 m/s. At 127°C it will be approximately:",
+    "options": ["330 m/s", "360 m/s", "390 m/s", "420 m/s"],
+    "answer": 2
+  },
+  {
+    "question": "The magnetic field at the center of a circular coil of radius R carrying current I is proportional to:",
+    "options": ["I/R", "IR", "I/R²", "R/I"],
+    "answer": 0
+  },
+  {
+    "question": "The SI unit of capacitance is:",
+    "options": ["Farad", "Henry", "Weber", "Tesla"],
+    "answer": 0
+  },
+  {
+    "question": "The efficiency of a Carnot engine depends on:",
+    "options": ["Working substance", "Temperature of reservoirs", "Pressure", "Volume"],
+    "answer": 1
+  },
+  {
+    "question": "The half‑life of a radioactive isotope is 5 hours. The fraction remaining after 15 hours is:",
+    "options": ["1/2", "1/4", "1/8", "1/16"],
+    "answer": 2
+  },
+  {
+    "question": "The de‑Broglie wavelength of an electron accelerated through potential V is proportional to:",
+    "options": ["1/√V", "√V", "1/V", "V"],
+    "answer": 0
+  },
+  {
+    "question": "In a series LCR circuit at resonance:",
+    "options": ["Impedance is maximum", "Impedance is minimum", "Current is minimum", "Voltage is zero"],
+    "answer": 1
+  },
+  {
+    "question": "The SI unit of magnetic flux density is:",
+    "options": ["Weber", "Tesla", "Henry", "Ampere"],
+    "answer": 1
+  },
+  {
+    "question": "The dimensional formula of work is:",
+    "options": ["ML²T⁻²", "MLT⁻²", "M²LT⁻²", "ML⁻¹T⁻²"],
+    "answer": 0
+  },
+  {
+    "question": "The time period of oscillation of a mass m attached to a spring of constant k is:",
+    "options": ["2π√(m/k)", "2π√(k/m)", "2πm/k", "2πk/m"],
+    "answer": 0
+  },
+  {
+    "question": "The SI unit of resistivity is:",
+    "options": ["Ohm", "Ohm‑meter", "Volt/meter", "Ampere/meter"],
+    "answer": 1
+  },
+  {
+    "question": "The potential energy of a system of two charges q1 and q2 separated by distance r is proportional to:",
+    "options": ["q1q2/r", "q1q2r", "q1+q2", "q1q2/r²"],
+    "answer": 0
+  },
+  {
+    "question": "The dimensional formula of angular momentum is:",
+    "options": ["ML²T⁻¹", "MLT⁻²", "M²LT⁻²", "ML⁻¹T⁻²"],
+    "answer": 0
+  },
+  {
+    "question": "The SI unit of inductance is:",
+    "options": ["Henry", "Tesla", "Weber", "Farad"],
+    "answer": 0
+  },
+  {
+    "question": "The velocity of a particle executing SHM at mean position is:",
+    "options": ["Maximum", "Minimum", "Zero", "Constant"],
+    "answer": 0
+  },
+  {
+    "question": "A satellite in geostationary orbit has a time period of:",
+    "options": ["12 hours", "24 hours", "48 hours", "6 hours"],
+    "answer": 1
+  },
+  {
+    "question": "The work done in stretching a spring is proportional to:",
+    "options": ["x", "x²", "1/x", "√x"],
+    "answer": 1
+  },
+  {
+    "question": "The SI unit of angular velocity is:",
+    "options": ["rad/s", "m/s", "Hz", "rpm"],
+    "answer": 0
+  },
+  {
+    "question": "The SI unit of frequency is:",
+    "options": ["Hertz", "Newton", "Joule", "Pascal"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the site of photosystem II activity?",
+    "options": ["Thylakoid membrane", "Stroma", "Mitochondria", "Cytoplasm"],
+    "answer": 0
+  },
+  {
+    "subject": "Biology",
+    "question": "Which vitamin deficiency causes rickets?",
+    "options": ["Vitamin A", "Vitamin B12", "Vitamin D", "Vitamin K"],
+    "answer": 2
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is the first stable product of the Calvin cycle?",
+    "options": ["Oxaloacetate", "3‑phosphoglycerate", "Pyruvate", "Malate"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is an example of apomixis?",
+    "options": ["Vegetative propagation", "Parthenogenesis", "Binary fission", "Fragmentation"],
+    "answer": 1
+  },
+  {
+    "subject": "Biology",
+    "question": "Which of the following is a nitrogenous waste excreted by birds?",
+    "options": ["Ammonia", "Urea", "Uric acid", "Creatinine"],
+    "answer": 2
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is used in the manufacture of Portland cement?",
+    "options": ["CaCO3", "NaCl", "KCl", "MgSO4"],
+    "answer": 0
+  },
+  {
+    "subject": "Chemistry",
+    "question": "Which of the following is an example of a homogeneous mixture?",
+    "options": ["Air", "Sand + salt", "Oil + water", "Iron filings + sulphur"],
+    "answer": 0
+  },
+  {
+    "subject": "Physics",
+    "question": "Which of the following phenomena explains the blue colour of the sky?",
+    "options": ["Reflection", "Refraction", "Scattering", "Diffraction"],
+    "answer": 2
+  },
+  {
+    "subject": "Physics",
+    "question": "Which of the following has the least wavelength?",
+    "options": ["Radio waves", "Infrared", "X‑rays", "Gamma rays"],
+    "answer": 3
+  }
+];
+
+
+
+
+        // remove fixed +1 hack that could create an empty question
+        // (questions count is already in the array size)
+        const timePerQuestion = 60; // seconds per question (NEET approx 1 min per question)
+        const totalTime = questionsData.length * timePerQuestion;
+
+        time = localStorage.getItem("neet_time")
+            ? parseInt(localStorage.getItem("neet_time"))
+            : totalTime;
+
+        if (time <= 0 || time > totalTime) {
+            time = totalTime;
+            localStorage.setItem("neet_time", time);
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        document.getElementById("timer").innerText = formatTime(time);
+
+        const questionsDiv = document.getElementById("questions");
+        const paletteDiv = document.getElementById("palette");
+
+        questionsData.forEach((q, index) => {
+            const qDiv = document.createElement("div");
+            qDiv.className = "question";
+            qDiv.id = "q" + index;
+
+            let savedAnswer = localStorage.getItem("neet_ans_" + index);
+
+            qDiv.innerHTML = `
+    <p><b>Q${index + 1}.</b> ${q.question}</p>
+    ${q.options.map((opt, i) => `
+        <label>
+        <input type="radio" name="q${index}" value="${i}" ${savedAnswer !== null && parseInt(savedAnswer) === i ? "checked" : ""}>
+        ${opt}
+        </label><br>`).join("")}
+    `;
+
+            questionsDiv.appendChild(qDiv);
+
+            qDiv.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener("change", function () {
+                    saveAnswer(index, this.value);
+                });
+            });
+
+
+            const btn = document.createElement("button");
+            btn.innerText = index + 1;
+            btn.className = "palette-btn not-visited";
+            btn.id = "p" + index;
+            btn.onclick = () => document.getElementById("q" + index).scrollIntoView();
+            paletteDiv.appendChild(btn);
+
+            if (savedAnswer !== null) updatePalette(index, true);
+        });
+
+        function saveAnswer(qIndex, optIndex) {
+            localStorage.setItem("neet_ans_" + qIndex, optIndex);
+            updatePalette(qIndex, true);
+        }
+
+        function updatePalette(index, answered) {
+            const btn = document.getElementById("p" + index);
+            btn.className = "palette-btn " + (answered ? "answered" : "not-answered");
+        }
+
+        function submitExam() {
+            let score = 0;
+            let attempted = 0;
+            const maxScore = questionsData.length * 4;
+
+            questionsData.forEach((q, i) => {
+                const qDiv = document.getElementById("q" + i);
+                const selected = localStorage.getItem("neet_ans_" + i);
+                const options = qDiv.querySelectorAll('input[type="radio"]');
+
+                options.forEach((opt, index) => {
+                    // Remove previous classes
+                    opt.parentElement.classList.remove("correct", "incorrect");
+
+                    if (index === q.answer) {
+                        // Correct answer
+                        opt.parentElement.classList.add("correct");
+                    }
+
+                    if (selected !== null && parseInt(selected) === index && parseInt(selected) !== q.answer) {
+                        // Wrongly selected option
+                        opt.parentElement.classList.add("incorrect");
+                    }
+                });
+
+                if (selected !== null) {
+                    attempted++;
+                    if (parseInt(selected) === q.answer) {
+                        score += 4;
+                    } else {
+                        score -= 1;
+                    }
+                }
+            });
+
+            alert("Score: " + score + " / " + maxScore);
+            localStorage.setItem("neet_score", score);
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let score = localStorage.getItem("neet_score") || 0;
+            const maxScore = questionsData.length * 4;
+            doc.text("NEET Mock Test Result", 20, 20);
+            doc.text("Score: " + score + " / " + maxScore, 20, 40);
+            doc.save("neet-result.pdf");
+        }
+
+        // Timer
+        setInterval(() => {
+            if (time <= 0) {
+                submitExam();
+                return;
+            }
+            time--;
+            localStorage.setItem("neet_time", time);
+            let h = Math.floor(time / 3600);
+            let m = Math.floor((time % 3600) / 60);
+            let s = time % 60;
+            document.getElementById("timer").innerText =
+                `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }, 1000);
+
+    </script>
+</body>
+
+</html>
